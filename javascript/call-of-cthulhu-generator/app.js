@@ -1,7 +1,7 @@
 const prompt = require("prompt-sync")();
 
 class Investigator {
-    constructor(player, character, age, stats, luck) {
+    constructor(player, character, age, stats) {
         this.player = player;
         this.character = character;
         this.age = age;
@@ -13,10 +13,40 @@ class Investigator {
             app: stats.app,
             edu: stats.edu,
             siz: stats.siz,
-            int: stats.int,
+            int: stats.int
         }
-        this.luck = luck;
+        this.luck = Number(stats.luck);
+        this.hp = Math.ceil((this.characteristics.siz + this.characteristics.con) / 10);
+        this.mp = this.characteristics.pow / 5;
+        this.sanity = this.characteristics.pow;
+        this.moveRate = defineMoveRate(this.age, this.characteristics)
+        this.combat = defineCombatStats(this.characteristics.str, this.characteristics.siz)
     }
+}
+
+function defineCombatStats(str, siz){
+    const x = str + siz;
+
+    if(x >=   2 && x <=  64) return {extra: -2, build: -2} 
+    if(x >=  65 && x <=  84) return {extra: -2, build: -1} 
+    if(x >=  85 && x <= 124) return {extra: 0, build: 0} 
+    if(x >= 125 && x <= 164) return {extra: "+1d4", build: 1} 
+    if(x >= 165)  return {extra: "+1d6", build: 2} 
+}
+
+function defineMoveRate(age, c) {
+    if(c.siz < c.dex && c.siz < c.str)   return (9 + verifyAge(age)); 
+    if(c.siz <= c.dex || c.siz <= c.str) return (8 + verifyAge(age));
+    if(c.siz > c.dex && c.siz > c.str)   return (7 + verifyAge(age));    
+}
+
+function verifyAge(age) {
+    if(age >= 40 && age < 50) return -1
+    if(age >= 50 && age < 60) return -2
+    if(age >= 60 && age < 70) return -3;
+    if(age >= 70 && age < 80) return -4;
+    if(age >= 80) return -5;
+    return 0;
 }
 
 function roll(sizes){
@@ -28,7 +58,7 @@ const firstQuestions = [
     "Qual o nome de seu investigador? ",
     "Qual a idade de seu investigador? "
 ];
-const characteristicsNames = ["Força", "Destreza", "Poder", "Constituição", "Aparência", "Tamanho", "Educação", "Inteligência"]
+const characteristicsNames = ["Força", "Destreza", "Poder", "Constituição", "Aparência", "Tamanho", "Educação", "Inteligência", "Sorte"]
 const answers = [];
 const characteristics = [];
 
@@ -74,17 +104,40 @@ if(manual === "manual") {
     })
 }
 
-const atributes = {
-    FOR: characteristics[0] * 5,
-    DES: characteristics[1] * 5,
-    POD: characteristics[2] * 5,
-    CON: characteristics[3] * 5,
-    APA: characteristics[4] * 5,
-    TAM: characteristics[5] * 5,
-    EDU: characteristics[6] * 5,
-    INT: characteristics[7] * 5,
-    Sorte: characteristics[8] * 5,
+const objectCharacteristics = {
+    str: Number(characteristics[0]) * 5,
+    dex: Number(characteristics[1]) * 5,
+    pow: Number(characteristics[2]) * 5,
+    con: Number(characteristics[3]) * 5,
+    app: Number(characteristics[4]) * 5,
+    edu: Number(characteristics[5]) * 5,
+    siz: Number(characteristics[6]) * 5,
+    int: Number(characteristics[7]) * 5,
+    luck: Number(characteristics[8]) * 5
 }
-console.log("")
-console.log("Esses foram os reultados:")
-console.table(atributes)
+
+console.clear()
+const inv = new Investigator(answers[0], answers[1], answers[2], objectCharacteristics)
+
+console.log(`
+Nome: ${inv.character}
+Jogador: ${inv.player}
+Idade: ${inv.age}
+
+Características / Atributos
+FOR: ${inv.characteristics.str}      DES: ${inv.characteristics.dex}
+POD: ${inv.characteristics.pow}      CON: ${inv.characteristics.con}
+APA: ${inv.characteristics.app}      TAM: ${inv.characteristics.siz}
+EDU: ${inv.characteristics.edu}      INT: ${inv.characteristics.int}
+Sorte: ${inv.luck}
+
+Estatísticas
+Pontos de Vida: ${inv.hp}
+Pontos de Sanidade: ${inv.sanity}
+Pontos de Magia: ${inv.mp}
+
+Informações de combate
+Taxa de movimento: ${inv.moveRate}
+Corpo: ${inv.combat.build}
+Dano extra: ${inv.combat.extra}
+`)
